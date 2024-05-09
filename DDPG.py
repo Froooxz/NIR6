@@ -26,7 +26,7 @@ model.learn(total_timesteps=1000)
 
 
 # Сохранение модели
-model.save('model')
+model.save('G:/Мой диск/Курс 3/Семестр 6/НИР1/model')
 
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=1)
 
