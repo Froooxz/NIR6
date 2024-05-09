@@ -6,7 +6,7 @@ from HeatingEnv import HeatingEnv
 
 
 # Загрузка обученной модели
-model = DDPG.load('G:/Мой диск/Курс 3/Семестр 6/НИР1/model')
+model = DDPG.load('model')
 
 # Инициализация переменных для хранения значений
 predicted_T_a = []
