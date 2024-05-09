@@ -1,0 +1,61 @@
+import matplotlib.pyplot as plt
+from stable_baselines3 import DDPG
+from stable_baselines3.common.vec_env import DummyVecEnv
+import numpy as np
+from HeatingEnv import HeatingEnv
+import tensorflow as tf
+
+# Загрузка обученной модели
+model = DDPG.load('G:/Мой диск/Курс 3/Семестр 6/НИР1/model')
+
+# Инициализация переменных для хранения значений
+predicted_T_a = []
+U_reg = []
+rewards = []  # Список для хранения значений reward
+
+env = HeatingEnv()
+env = DummyVecEnv([lambda: env])
+
+# Сброс среды
+obs = env.reset()
+
+sbros = 0
+done = False
+# Запуск предсказаний на каждом временном шаге моделирования
+while sbros < 3:
+
+    while not done:
+        action, _ = model.predict(obs, deterministic=True)  # Получение предсказанного действия от модели
+        obs, reward, done, _ = env.step(action)  # Выполнение действия в среде
+
+        # Сохранение T_a U_reg reward
+        predicted_T_a.append(np.interp(obs[0][-2], (-1, 1), (20, 40)))
+
+        U_reg.append(env.envs[0].U_reg)
+        rewards.append(reward)
+    done = False
+    sbros += 1
+
+# Преобразование U_reg к одномерному массиву
+U_reg_flat = [x[0] if isinstance(x, np.ndarray) else x for x in U_reg]
+U_reg_flat = np.array(U_reg_flat)
+
+# Построение графика
+plt.figure(figsize=(10, 9))
+
+plt.subplot(3, 1, 1)
+plt.plot(predicted_T_a)
+plt.ylabel('T_a')
+plt.grid()
+
+plt.subplot(3, 1, 2)
+plt.plot(U_reg_flat)
+plt.ylabel('U_reg')
+plt.grid()
+
+plt.subplot(3, 1, 3)
+plt.plot(rewards)
+plt.ylabel('Reward')
+plt.grid()
+
+plt.show()
