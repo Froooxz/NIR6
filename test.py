@@ -3,7 +3,7 @@ from stable_baselines3 import DDPG
 from stable_baselines3.common.vec_env import DummyVecEnv
 import numpy as np
 from HeatingEnv import HeatingEnv
-import tensorflow as tf
+
 
 # Загрузка обученной модели
 model = DDPG.load('G:/Мой диск/Курс 3/Семестр 6/НИР1/model')
