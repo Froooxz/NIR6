@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import numpy as np
-import gym
+
 
 U_reg = 305  # Напряжение сети для нихрома, В
 U = 220  # Напряжение сети для вентилятора, В
