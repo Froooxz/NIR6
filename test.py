@@ -9,9 +9,11 @@ from HeatingEnv import HeatingEnv
 model = DDPG.load('model')
 
 # Инициализация переменных для хранения значений
-predicted_T_a = []
+T_a = []
+target = []
 U_reg = []
 rewards = []  # Список для хранения значений reward
+
 
 env = HeatingEnv()
 env = DummyVecEnv([lambda: env])
@@ -29,7 +31,9 @@ while sbros < 3:
         obs, reward, done, _ = env.step(action)  # Выполнение действия в среде
 
         # Сохранение T_a U_reg reward
-        predicted_T_a.append(np.interp(obs[0][-2], (-1, 1), (20, 40)))
+
+        T_a.append(np.interp(obs[0][-2], (-1, 1), (-20, 2330)))
+        target.append(np.interp(obs[0][-1], (-1, 1), (-20, (30 + 110 - 10))))
 
         U_reg.append(env.envs[0].U_reg)
         rewards.append(reward)
@@ -44,8 +48,10 @@ U_reg_flat = np.array(U_reg_flat)
 plt.figure(figsize=(10, 9))
 
 plt.subplot(3, 1, 1)
-plt.plot(predicted_T_a)
-plt.ylabel('T_a')
+plt.plot(T_a, label='T_a')
+plt.plot(target, label='target')
+plt.ylabel('T')
+plt.legend()
 plt.grid()
 
 plt.subplot(3, 1, 2)
@@ -57,5 +63,6 @@ plt.subplot(3, 1, 3)
 plt.plot(rewards)
 plt.ylabel('Reward')
 plt.grid()
+
 
 plt.show()

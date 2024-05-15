@@ -32,7 +32,7 @@ class HeatingEnv(gym.Env):
         self.R = 100  # сопротивление
         ###
         self.dt = 0.01  # Определение временного шага моделирования
-        self.T_a_in = int(np.random.uniform(20, 30))  # начальная температура воздуха
+        self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
         self.T_n = self.T_a_in  # текущая спирали
         self.T_a = self.T_a_in  # текущая температура воздуха
         self.i = 0  # начальный ток
@@ -55,7 +55,7 @@ class HeatingEnv(gym.Env):
         # Задание целевой температуры #######
         # верхняя граница состоит из +110(нагревание на 110 при максимальной мощности)
         #  -10(если будет целевая температура T_a_in + 110 нейронная сеть сможет просто выкрутить макисмальную мощность не понимая что она делает и добьётся успеха надо давать штраф за выход за верхнюю границу)
-        self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in +10))  # целевая температура
+        self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 110 - 10))  # целевая температура
 
         self.temp_error_threshold = 1  # Задание порогового значения погрешности температуры
         self.time_in_target_range = 0  # счетчик времени, проведенного в целевом диапазоне
@@ -71,11 +71,11 @@ class HeatingEnv(gym.Env):
         # self.T_a = -20, 2330 (наибольшая self.T_a_in и наименьший self.Gnom)
         # self.target_temp = -20, 30 + 110 - 10
 
-        self.T_a_in_range = (20, 30)
+        self.T_a_in_range = (-20, 30)
         self.U_reg_range = (0, 305)
-        self.T_n_range = (20, 2506)
-        self.T_a_range = (20, 2330)
-        self.target_temp_range = (20, 40)
+        self.T_n_range = (-20, 2506)
+        self.T_a_range = (-20, 2330)
+        self.target_temp_range = (-20, (30 + 110 - 10))
 
         self.action_range = (0, 305)
 
@@ -90,7 +90,7 @@ class HeatingEnv(gym.Env):
     def step(self, action):
         rew = 0
 
-        self.U_reg = np.interp(action, (-1, 1), self.action_range)  # Обновляем коэффициенты на основе действия агента
+        self.U_reg = np.interp(action[0], (-1, 1), self.action_range)  # Обновляем коэффициенты на основе действия агента
         self.hist.append(self.U_reg)
 
         # Рассчитываем новые значения параметров
@@ -103,7 +103,7 @@ class HeatingEnv(gym.Env):
                 self.alf * self.N_F * (self.T_n - self.T_a) - 2 * self.G_ * self.A_ro * self.A_c * (
                 self.T_a - self.T_a_in)))
 
-        discrepancy = abs(self.T_a - self.target_temp)[0]  # невязка
+        discrepancy = abs(self.T_a - self.target_temp)  # невязка
 
         # print(discrepancy)
         self.time_maximum_count += 1
@@ -163,8 +163,8 @@ class HeatingEnv(gym.Env):
         self.G_ = 0
         self.i = 0
         self.w = 0
-        self.T_a_in = int(np.random.uniform(20, 30))  # начальная температура воздуха
-        self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in +  10))  # целевая температура
+        self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
+        self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 110 - 10))  # целевая температура
         self.max_temp = self.target_temp + 10  # обновляем верхний предел
         self.Gnom = np.random.uniform((250 / 3600) * 0.05,
                                       250 / 3600)  # номинальный коэффициент теплоотдачи(минимум это 5% от максимума)
