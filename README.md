@@ -1,2 +1,2 @@
 # NIR6
-''Reinforcement learning(RL)''
+НИР 6 семестр ''Reinforcement learning(RL)''
