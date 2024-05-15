@@ -60,7 +60,7 @@ class HeatingEnv(gym.Env):
         self.temp_error_threshold = 1  # Задание порогового значения погрешности температуры
         self.time_in_target_range = 0  # счетчик времени, проведенного в целевом диапазоне
         self.time_maximum_count = 0  # время моделеирования счётчик
-        self.time_limit = 150  # лимит времени (время в течение которого нужно держать температуру в целевом диапазоне)
+        self.time_limit = 100  # лимит времени (время в течение которого нужно держать температуру в целевом диапазоне)
         self.time_maximum = 1000  # время моделеирования (не более заданного в условии)
 
         self.max_temp = self.target_temp + 10  # Максимально допустимая температура
@@ -117,19 +117,19 @@ class HeatingEnv(gym.Env):
 
         # Если долго не может достичь нужной температуры (попытка не удачна)
         if self.time_maximum_count == self.time_maximum:
-            rew -= 10  # Штраф долгое недостижение цели
+            rew -= 20  # Штраф долгое недостижение цели
             self.done = True  # Считать попытку НЕ удачной и завершить
-            print('3 - долго не может достичь нужной температуры')
+            # print('3 - долго не может достичь нужной температуры')
 
         # Если достигнута целевая температура с погрешностью и удерживается в течение времени (попытка удачна)
         if self.time_in_target_range >= self.time_limit:
-            rew += 20
+            rew += 30
             self.done = True  # Считать попытку удачной и завершить
-            print('4 - температура удерживается в течение времени')
+            # print('4 - температура удерживается в течение времени')
 
         # Небольшая награда за удержание нужной температуры
         if discrepancy <= self.temp_error_threshold:
-            rew += 5
+            rew += 7
             self.time_maximum_count = 0  # если достиг нужной температуры сброс счётчика (счётчик гуляния вне уставки)
             self.time_in_target_range += 1  # Обновляем счётчик времени в целевом диапазоне, если достигнута целевая температура
             # print('5 - удержание нужной температуры')
@@ -154,7 +154,7 @@ class HeatingEnv(gym.Env):
         return observation, self.reward, self.done, {}
 
     def reset(self):
-        print(self.hist)
+        # print(self.hist)
         self.done = False
         self.reward = np.random.uniform(-1, 1)
 
@@ -170,8 +170,8 @@ class HeatingEnv(gym.Env):
                                       250 / 3600)  # номинальный коэффициент теплоотдачи(минимум это 5% от максимума)
         self.T_n = self.T_a_in  # текущая спирали
         self.T_a = self.T_a_in  # текущая температура воздуха
-        print('T_a_in = ', self.T_a_in)
-        print('T_target = ', self.target_temp)
+        # print('T_a_in = ', self.T_a_in)
+        # print('T_target = ', self.target_temp)
         # print('Gnom = ', self.Gnom)
         self.U_reg = 0
 
@@ -183,5 +183,4 @@ class HeatingEnv(gym.Env):
             np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
 
-        # print(self.hist)
         return observation
