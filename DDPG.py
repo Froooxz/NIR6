@@ -16,7 +16,7 @@ from HeatingEnv import HeatingEnv
 import torch.nn as nn
 
 class CustomMLP(nn.Module):
-    def __init__(self, input_dim: int, output_dim: int):
+    def __init__(self, input_dim: int, output_dim: int, n_critics):
         super(CustomMLP, self).__init__()
         self.fc1 = nn.Linear(input_dim, 64)  # Первый скрытый слой с 64 нейронами
         self.fc2 = nn.Linear(64, 64)         # Второй скрытый слой с 64 нейронами
@@ -43,7 +43,7 @@ model = DDPG(
     # learning_starts=1000,  # обучение после выполнения X шагов
     # train_freq=1,  # обновляем политику каждые X шагов
     # gradient_steps=10,  # количество шагов градиентного спуска для обновления политики
-    # policy_kwargs=dict(net_arch=[8]),  # Пример настройки архитектуры нейронной сети политики
+    # policy_kwargs=dict(n_critics=1),  # Пример настройки архитектуры нейронной сети политики
     verbose=1  # информацию о ходе обучения
 )
 
