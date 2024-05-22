@@ -24,7 +24,7 @@ obs = env.reset()
 sbros = 0
 done = False
 # Запуск предсказаний на каждом временном шаге моделирования
-while sbros < 3:
+while sbros < 1:
 
     while not done:
         action, _ = model.predict(obs, deterministic=True)  # Получение предсказанного действия от модели

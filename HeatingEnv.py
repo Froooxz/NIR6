@@ -43,7 +43,7 @@ class HeatingEnv(gym.Env):
         self.kc = 0.037  # коэффициент охлаждения
         self.Gnom = np.random.uniform((250 / 3600) * 0.05,
                                       250 / 3600)  # номинальный коэффициент теплоотдачи(минимум это 5% от максимума)
-        self.wnom = 1500  # номинальный коэффициент частоты вращения
+        self.wnom = 2500  # номинальный коэффициент частоты вращения
         self.G_ = 0
 
         #############################################################################
@@ -90,8 +90,10 @@ class HeatingEnv(gym.Env):
     def step(self, action):
         rew = 0
 
-        self.U_reg = np.interp(action[0], (-1, 1), self.action_range)  # Обновляем коэффициенты на основе действия агента
-        self.hist.append(self.U_reg)
+        # self.U_reg = np.interp(action[0], (-1, 1), self.action_range)  # Обновляем коэффициенты на основе действия агента
+        self.U_reg += action[0]  # Обновляем коэффициенты на основе действия агента
+        self.hist.append(action[0])
+
 
         # Рассчитываем новые значения параметров
         self.i += self.dt * (1 / self.L * (self.U - self.kw * self.w - self.i * self.R))
@@ -109,6 +111,12 @@ class HeatingEnv(gym.Env):
         self.time_maximum_count += 1
 
         ### REWARD
+
+        if 0 > self.U_reg or self.U_reg > 305:
+            rew -= 200
+            self.done = True
+            print('0 - выход U_reg за границы')
+
         # Проверяем на допустимость температуры (выход за max границу) (попытка не удачна)
         if self.T_a >= self.max_temp:
             rew -= 5  # Штраф за выход за пределы
@@ -154,7 +162,7 @@ class HeatingEnv(gym.Env):
         return observation, self.reward, self.done, {}
 
     def reset(self):
-        # print(self.hist)
+        print(self.hist)
         self.done = False
         self.reward = np.random.uniform(-1, 1)
 
