@@ -3,7 +3,7 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.vec_env import DummyVecEnv
 import numpy as np
 from HeatingEnvDQN import HeatingEnvDQN
-
+7
 
 # Загрузка обученной модели
 model = DQN.load('modelDQN')

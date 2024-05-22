@@ -6,7 +6,7 @@ import gym
 # self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
 # self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 110 - 10))  # целевая температура
 # self.Gnom = np.random.uniform((250 / 3600) * 0.05, 250 / 3600)  # номинальный коэффициент теплоотдачи(минимум это 5% от максимума)
-
+7
 class HeatingEnv(gym.Env):
     def __init__(self):
         super(HeatingEnv, self).__init__()

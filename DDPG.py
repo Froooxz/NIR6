@@ -12,7 +12,7 @@ from HeatingEnv import HeatingEnv
 env = HeatingEnv()
 env = DummyVecEnv([lambda: env])
 
-
+7
 # Обучение с использованием DDPG
 model = DDPG(
     policy=MlpPolicy,  # используем MlpPolicy в качестве политики

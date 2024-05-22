@@ -3,7 +3,7 @@ from stable_baselines3 import DDPG
 from stable_baselines3.common.vec_env import DummyVecEnv
 import numpy as np
 from HeatingEnv import HeatingEnv
-
+7
 
 # Загрузка обученной модели
 model = DDPG.load('model')

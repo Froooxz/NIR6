@@ -1,7 +1,7 @@
 import numpy as np
 import gym
 
-
+7
 # рандомные параметры
 # self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
 # self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 110 - 10))  # целевая температура
