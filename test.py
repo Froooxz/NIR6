@@ -6,7 +6,7 @@ from HeatingEnv import HeatingEnv
 
 
 # Загрузка обученной модели
-model = DDPG.load('model')
+model = DDPG.load('model.zip')
 
 # Инициализация переменных для хранения значений
 T_a = []
@@ -32,8 +32,8 @@ while sbros < 1:
 
         # Сохранение T_a U_reg reward
 
-        T_a.append(np.interp(obs[0][-2], (-1, 1), (-20, 2330)))
-        target.append(np.interp(obs[0][-1], (-1, 1), (-20, (30 + 110 - 10))))
+        T_a.append(np.interp(obs[0][-2], (-1, 1), (-20, 30)))
+        target.append(np.interp(obs[0][-1], (-1, 1), (-20, 30)))
 
         U_reg.append(env.envs[0].U_reg)
         rewards.append(reward)
