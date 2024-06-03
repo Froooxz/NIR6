@@ -31,7 +31,7 @@ model.learn(total_timesteps=1000)
 
 
 # Сохранение модели
-# model.save('model')
+
 model.save('model')
 
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=1)

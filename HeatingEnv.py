@@ -83,22 +83,22 @@ class HeatingEnv(gym.Env):
         #  -10(если будет целевая температура T_a_in + 110 нейронная сеть сможет просто выкрутить макисмальную мощность не понимая что она делает и добьётся успеха надо давать штраф за выход за верхнюю границу)
 
         # self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 110 - 10))  # целевая температура
-        self.target_temp = 25  # целевая температура
+        self.target_temp = 20  # целевая температура
 
 
-        self.temp_error_threshold = 1  # Задание порогового значения погрешности температуры
+        self.temp_error_threshold = 0.2  # Задание порогового значения погрешности температуры
         self.time_in_target_range = 0  # счетчик времени, проведенного в целевом диапазоне
         self.time_maximum_count = 0  # время моделеирования счётчик
-        self.time_limit = 100  # лимит времени (время в течение которого нужно держать температуру в целевом диапазоне)
-        self.time_maximum = 1000  # время моделеирования (не более заданного в условии)
+        self.time_limit = 30  # лимит времени (время в течение которого нужно держать температуру в целевом диапазоне)
+        self.time_maximum = 60  # время моделеирования (не более заданного в условии)
 
-        self.max_temp = self.target_temp + 10  # Максимально допустимая температура
+        self.max_temp = self.target_temp + 1000  # Максимально допустимая температура
 
 
         self.T_a_in_range = (-20, 30)
         self.U_reg_range = (0, 220)
-        self.T_n_range = (-20, 192)
-        self.T_a_range = (-20, 30)
+        self.discrepancy_range = (-20, 20)
+        self.T_a_range = (-20, 300)
         self.target_temp_range = (-20, 30)
 
         self.action_range = (0, 220)
@@ -107,16 +107,26 @@ class HeatingEnv(gym.Env):
                                                 high=np.array([1, 1, 1, 1, 1]),
                                                 dtype=np.float32)  # Определение пространства состояний среды: температура и частота вращения
 
-        self.action_space = gym.spaces.Box(low=-2, high=2,
+        self.action_space = gym.spaces.Box(low=-1, high=1,
                                            shape=(1,),
                                            dtype=np.float32)  # Определение пространства действий агента
 
     def step(self, action):
         rew = 0
-        # self.U_reg = np.interp(action[0], (-1, 1), self.action_range)  # Обновляем коэффициенты на основе действия агента
 
-        self.U_reg += action[0]  # Обновляем коэффициенты на основе действия агента
-        self.hist.append(action[0])
+        self.U_reg = np.interp(action[0], (-1, 1), self.action_range)  # Обновляем коэффициенты на основе действия агента
+
+        # # Расчёт U_reg
+        # if 0 > self.U_reg + action[0] or self.U_reg + action[0] > 220:
+        #     pass
+        # else:
+        #     if self.T_a < self.target_temp:
+        #         self.U_reg += abs(action[0])  # Обновляем коэффициенты на основе действия агента
+        #     else:
+        #         self.U_reg -= abs(action[0])  # Обновляем коэффициенты на основе действия агента
+
+
+        self.hist.append(self.U_reg)
 
 
         # Уравнения электродвигателя, считаем ток и обороты
@@ -131,14 +141,11 @@ class HeatingEnv(gym.Env):
         discrepancy = abs(self.T_a - self.target_temp)  # невязка
         # print(discrepancy)
 
-        self.time_maximum_count += 1
+        self.time_maximum_count += 0.01
 
         ### REWARD
 
-        if 0 > self.U_reg or self.U_reg > 220:
-            rew -= 200
-            self.done = True
-            print('0 - выход U_reg за границы')
+
 
         # Проверяем на допустимость температуры (выход за max границу) (попытка не удачна)
         if self.T_a >= self.max_temp:
@@ -147,36 +154,35 @@ class HeatingEnv(gym.Env):
             # print('1 - выход за max границу')
 
         # Если долго не может достичь нужной температуры (попытка не удачна)
-        if self.time_maximum_count == self.time_maximum:
-            rew -= 20  # Штраф долгое недостижение цели
+        if self.time_maximum_count >= self.time_maximum:
             self.done = True  # Считать попытку НЕ удачной и завершить
             # print('3 - долго не может достичь нужной температуры')
 
         # Если достигнута целевая температура с погрешностью и удерживается в течение времени (попытка удачна)
         if self.time_in_target_range >= self.time_limit:
-            rew += 30
             self.done = True  # Считать попытку удачной и завершить
             # print('4 - температура удерживается в течение времени')
 
         # Небольшая награда за удержание нужной температуры
         if discrepancy <= self.temp_error_threshold:
-            rew += 7
+            rew += 0.1
             self.time_maximum_count = 0  # если достиг нужной температуры сброс счётчика (счётчик гуляния вне уставки)
-            self.time_in_target_range += 1  # Обновляем счётчик времени в целевом диапазоне, если достигнута целевая температура
+            self.time_in_target_range += 0.01  # Обновляем счётчик времени в целевом диапазоне, если достигнута целевая температура
             # print('5 - удержание нужной температуры')
         else:
             self.time_in_target_range = 0  # Сбрасываем счётчик, если целевая температура не достигнута
 
         # Небольшая штраф за недостижения желаемой температуре
         if discrepancy >= self.temp_error_threshold:
-            rew -= discrepancy * 0.01 + np.random.normal(0, 0.1)
+            rew -= abs(self.T_a - self.target_temp) * 0.0005
+
 
         self.reward += rew
 
         observation = np.array([
             np.interp(self.T_a_in, self.T_a_in_range, (-1, 1)),
             np.interp(self.U_reg, self.U_reg_range, (-1, 1)),
-            np.interp(self.T_n, self.T_n_range, (-1, 1)),
+            np.interp(discrepancy, self.discrepancy_range, (-1, 1)),
             np.interp(self.T_a, self.T_a_range, (-1, 1)),
             np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
@@ -186,6 +192,8 @@ class HeatingEnv(gym.Env):
 
     def reset(self):
         print(self.hist)
+        discrepancy = abs(self.T_a - self.target_temp)
+
         self.done = False
         self.reward = np.random.uniform(-1, 1)
 
@@ -197,7 +205,7 @@ class HeatingEnv(gym.Env):
         # self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
         self.T_a_in = 15  # начальная температура воздуха
 
-        self.target_temp = 25  # целевая температура
+        self.target_temp = 20  # целевая температура
         self.max_temp = self.target_temp + 10  # обновляем верхний предел
         self.Gnom = 200/3600  # номинальный коэффициент теплоотдачи(минимум это 5% от максимума)
         self.T_n = self.T_a_in  # текущая спирали
@@ -210,7 +218,7 @@ class HeatingEnv(gym.Env):
         observation = np.array([
             np.interp(self.T_a_in, self.T_a_in_range, (-1, 1)),
             np.interp(self.U_reg, self.U_reg_range, (-1, 1)),
-            np.interp(self.T_n, self.T_n_range, (-1, 1)),
+            np.interp(discrepancy, self.discrepancy_range, (-1, 1)),
             np.interp(self.T_a, self.T_a_range, (-1, 1)),
             np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
