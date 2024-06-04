@@ -65,7 +65,7 @@ class HeatingEnv(gym.Env):
         self.dt = 0.01  # Дискрет времени, с
 
         # Начальтные условия моделирования, для численного интегрирования
-        self.T_a_in = int(np.random.uniform(-20, 30))  # Температура окружающего воздуха, С
+        self.T_a_in = int(np.random.uniform(10, 19))  # Температура окружающего воздуха, С
         self.T_a = self.T_a_in
         self.T_n = self.T_a_in
         self.i = 0
@@ -82,8 +82,8 @@ class HeatingEnv(gym.Env):
         # верхняя граница состоит из +110(нагревание на 110 при максимальной мощности)
         #  -10(если будет целевая температура T_a_in + 110 нейронная сеть сможет просто выкрутить макисмальную мощность не понимая что она делает и добьётся успеха надо давать штраф за выход за верхнюю границу)
 
-        # self.target_temp = 20  # целевая температура
-        self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 11))  # целевая температура
+        self.target_temp = 20  # целевая температура
+        # self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 11))  # целевая температура
 
         self.temp_error_threshold = 0.2  # Задание порогового значения погрешности температуры
         self.time_in_target_range = 0  # счетчик времени, проведенного в целевом диапазоне
@@ -139,7 +139,7 @@ class HeatingEnv(gym.Env):
         self.i += self.dt * (1 / self.L * (self.U - self.kw * self.w - self.i * self.R))
         self.w += self.dt * (1 / self.J * (self.ke * self.i - self.kc * self.w))
         # Считаем расход воздуха относительно оборотов
-        self.G_ = (self.Gnom+self.Gnom_noise[self.iii]) * (self.w / self.wnom)
+        self.G_ = self.Gnom * (self.w / self.wnom) + self.Gnom_noise[self.iii]
         # self.G_ = self.Gnom * (self.w / self.wnom)
         # Уравнения теплопередачи
         self.T_n += self.dt * (1 / (self.N_c * self.N_m) * (self.U_reg ** 2 / self.N_R - self.alf * self.N_F * (self.T_n - self.T_a)))
@@ -161,7 +161,8 @@ class HeatingEnv(gym.Env):
 
         # Если долго не может достичь нужной температуры (попытка не удачна)
         if self.time_maximum_count >= self.time_maximum:
-            self.done = True  # Считать попытку НЕ удачной и завершить
+            rew -= (self.iii**2) * 0.0005
+            # self.done = True  # Считать попытку НЕ удачной и завершить
             # print('3 - долго не может достичь нужной температуры')
 
         # Если достигнута целевая температура с погрешностью и удерживается в течение времени (попытка удачна)
@@ -180,7 +181,7 @@ class HeatingEnv(gym.Env):
 
         # Небольшая штраф за недостижения желаемой температуре
         if discrepancy >= self.temp_error_threshold:
-            rew -= abs(self.T_a - self.target_temp)**2 * 0.00005
+            rew -= abs(self.T_a - self.target_temp) * 0.00005
 
         self.reward += rew
 
@@ -214,9 +215,10 @@ class HeatingEnv(gym.Env):
         self.i = 0
         self.w = 0
         # self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
-        self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
+        self.T_a_in = int(np.random.uniform(10, 19))  # начальная температура воздуха
+        self.target_temp = 20  # целевая температура  # целевая температура
+        # self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 11))  # целевая температура  # целевая температура
 
-        self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 11))  # целевая температура  # целевая температура
         self.max_temp = self.target_temp + 100  # обновляем верхний предел
         self.T_n = self.T_a_in  # текущая спирали
         self.T_a = self.T_a_in  # текущая температура воздуха

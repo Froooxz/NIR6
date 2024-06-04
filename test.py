@@ -53,9 +53,9 @@ plt.figure(figsize=(10, 9))
 
 plt.subplot(4, 1, 1)
 
-l = len(T_a[::1])
-plt.plot(T_a[::1], label='T_a')
-plt.plot(target[::1], label='target')
+l = len(T_a[:-10])
+plt.plot(T_a[:-10], label='T_a')
+plt.plot(target[:-10], label='target')
 plt.plot([target[0]-env.envs[0].temp_error_threshold]*l, color='C5',  alpha=0.6)
 plt.plot([target[0]+env.envs[0].temp_error_threshold]*l, color='C5',  alpha=0.6)
 plt.ylabel('T')
@@ -63,17 +63,17 @@ plt.legend()
 plt.grid()
 
 plt.subplot(4, 1, 2)
-plt.plot(U_reg_flat[::1])
+plt.plot(U_reg_flat[:-10])
 plt.ylabel('U_reg')
 plt.grid()
 
 plt.subplot(4, 1, 3)
-plt.plot(rewards)
+plt.plot(rewards[:-10])
 plt.ylabel('Reward')
 plt.grid()
 
 plt.subplot(4, 1, 4)
-plt.plot(G_)
+plt.plot(G_[:-10])
 plt.ylabel('Gnom + noise')
 plt.grid()
 
