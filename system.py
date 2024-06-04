@@ -56,11 +56,11 @@ t_end = 100  # Общее время моделирования, с
 t = np.arange(0, t_end + dt, dt)  # Создание массива временных шагов от 0 до t_end с шагом dt
 
 # Начальтные условия моделирования, для численного интегрирования
+T_a_in = 30  # Температура окружающего воздуха, С
 T_a = np.zeros(len(t))
-T_a[0] = 25
+T_a[0] = T_a_in
 T_n = np.zeros(len(t))
-T_n[0] = 25
-T_a_in = 25  # Температура окружающего воздуха, С
+T_n[0] = T_a_in
 i = np.zeros(len(t))
 i[0] = 0
 w = np.zeros(len(t))
@@ -89,3 +89,4 @@ plt.plot(t, w)
 plt.grid(True)
 plt.show()
 
+print(abs(abs(T_a_in)-abs(T_a[-1])))

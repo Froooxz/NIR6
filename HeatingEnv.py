@@ -32,7 +32,7 @@ class HeatingEnv(gym.Env):
         self.N_c = 450  # Удельная теплоемкость нихрома, Дж/(кг*С) (по физическим свойствам)
         self.N_ro = 8300  # Плотность нихрома, кг/м3 (по физическим свойствам)
 
-        self.N_m = self.N_ro *self. N_L * self.N_S / 1e6  # Масса нихромовой спирали, кг (расчитываем)
+        self.N_m = self.N_ro * self.N_L * self.N_S / 1e6  # Масса нихромовой спирали, кг (расчитываем)
         self.N_F = np.pi * self.N_d / 1e3 * self.N_L  # Контактная площадь спирали, м2
 
         # Воздух
@@ -65,7 +65,7 @@ class HeatingEnv(gym.Env):
         self.dt = 0.01  # Дискрет времени, с
 
         # Начальтные условия моделирования, для численного интегрирования
-        self.T_a_in = 15  # Температура окружающего воздуха, С
+        self.T_a_in = int(np.random.uniform(-20, 30))  # Температура окружающего воздуха, С
         self.T_a = self.T_a_in
         self.T_n = self.T_a_in
         self.i = 0
@@ -82,9 +82,8 @@ class HeatingEnv(gym.Env):
         # верхняя граница состоит из +110(нагревание на 110 при максимальной мощности)
         #  -10(если будет целевая температура T_a_in + 110 нейронная сеть сможет просто выкрутить макисмальную мощность не понимая что она делает и добьётся успеха надо давать штраф за выход за верхнюю границу)
 
-        # self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 110 - 10))  # целевая температура
-        self.target_temp = 20  # целевая температура
-
+        # self.target_temp = 20  # целевая температура
+        self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 11))  # целевая температура
 
         self.temp_error_threshold = 0.2  # Задание порогового значения погрешности температуры
         self.time_in_target_range = 0  # счетчик времени, проведенного в целевом диапазоне
@@ -94,12 +93,19 @@ class HeatingEnv(gym.Env):
 
         self.max_temp = self.target_temp + 1000  # Максимально допустимая температура
 
+        # Gnom noise
+        amplitude = self.Gnom * 0.1
+        frequency = 1
+        x = np.linspace(0, self.time_maximum + self.time_limit + self.time_maximum, (self.time_maximum + self.time_limit + self.time_maximum) * 100)
+        self.Gnom_noise = amplitude * np.sin(frequency * x)
+
+
 
         self.T_a_in_range = (-20, 30)
         self.U_reg_range = (0, 220)
-        self.discrepancy_range = (-20, 20)
-        self.T_a_range = (-20, 300)
-        self.target_temp_range = (-20, 30)
+        self.discrepancy_range = (-50, 50)
+        self.T_a_range = (-20, 50)
+        self.target_temp_range = (-20, 50)
 
         self.action_range = (0, 220)
 
@@ -110,6 +116,8 @@ class HeatingEnv(gym.Env):
         self.action_space = gym.spaces.Box(low=-1, high=1,
                                            shape=(1,),
                                            dtype=np.float32)  # Определение пространства действий агента
+
+        self.i = 0
 
     def step(self, action):
         rew = 0
@@ -125,15 +133,13 @@ class HeatingEnv(gym.Env):
         #     else:
         #         self.U_reg -= abs(action[0])  # Обновляем коэффициенты на основе действия агента
 
-
-        self.hist.append(self.U_reg)
-
+        # self.hist.append(action[0])
 
         # Уравнения электродвигателя, считаем ток и обороты
         self.i += self.dt * (1 / self.L * (self.U - self.kw * self.w - self.i * self.R))
         self.w += self.dt * (1 / self.J * (self.ke * self.i - self.kc * self.w))
         # Считаем расход воздуха относительно оборотов
-        self.G_ = self.Gnom * (self.w / self.wnom)
+        self.G_ = (self.Gnom+self.Gnom_noise[int(self.i)]) * (self.w / self.wnom)
         # Уравнения теплопередачи
         self.T_n += self.dt * (1 / (self.N_c * self.N_m) * (self.U_reg ** 2 / self.N_R - self.alf * self.N_F * (self.T_n - self.T_a)))
         self.T_a += self.dt * (1 / (self.A_c * self.A_m) * (self.alf * self.N_F * (self.T_n - self.T_a) - 2 * self.G_ * self.A_ro * self.A_c * (self.T_a - self.T_a_in)))
@@ -144,8 +150,6 @@ class HeatingEnv(gym.Env):
         self.time_maximum_count += 0.01
 
         ### REWARD
-
-
 
         # Проверяем на допустимость температуры (выход за max границу) (попытка не удачна)
         if self.T_a >= self.max_temp:
@@ -176,7 +180,6 @@ class HeatingEnv(gym.Env):
         if discrepancy >= self.temp_error_threshold:
             rew -= abs(self.T_a - self.target_temp) * 0.0005
 
-
         self.reward += rew
 
         observation = np.array([
@@ -187,11 +190,12 @@ class HeatingEnv(gym.Env):
             np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
 
-
         return observation, self.reward, self.done, {}
 
+        self.i += 1
+
     def reset(self):
-        print(self.hist)
+        # print(self.hist)
         discrepancy = abs(self.T_a - self.target_temp)
 
         self.done = False
@@ -203,16 +207,13 @@ class HeatingEnv(gym.Env):
         self.i = 0
         self.w = 0
         # self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
-        self.T_a_in = 15  # начальная температура воздуха
+        self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
 
-        self.target_temp = 20  # целевая температура
-        self.max_temp = self.target_temp + 10  # обновляем верхний предел
-        self.Gnom = 200/3600  # номинальный коэффициент теплоотдачи(минимум это 5% от максимума)
+        self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 11))  # целевая температура  # целевая температура
+        self.max_temp = self.target_temp + 100  # обновляем верхний предел
         self.T_n = self.T_a_in  # текущая спирали
         self.T_a = self.T_a_in  # текущая температура воздуха
-        # print('T_a_in = ', self.T_a_in)
-        # print('T_target = ', self.target_temp)
-        # print('Gnom = ', self.Gnom)
+
         self.U_reg = 0
 
         observation = np.array([
@@ -222,5 +223,7 @@ class HeatingEnv(gym.Env):
             np.interp(self.T_a, self.T_a_range, (-1, 1)),
             np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
+
+        self.i = 0
 
         return observation
