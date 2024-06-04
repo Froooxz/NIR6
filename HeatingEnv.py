@@ -89,7 +89,7 @@ class HeatingEnv(gym.Env):
         self.time_in_target_range = 0  # счетчик времени, проведенного в целевом диапазоне
         self.time_maximum_count = 0  # время моделеирования счётчик
         self.time_limit = 30  # лимит времени (время в течение которого нужно держать температуру в целевом диапазоне)
-        self.time_maximum = 60  # время моделеирования (не более заданного в условии)
+        self.time_maximum = 80  # время моделеирования (не более заданного в условии)
 
         self.max_temp = self.target_temp + 1000  # Максимально допустимая температура
 
@@ -161,8 +161,7 @@ class HeatingEnv(gym.Env):
 
         # Если долго не может достичь нужной температуры (попытка не удачна)
         if self.time_maximum_count >= self.time_maximum:
-            rew -= (self.iii**2) * 0.0005
-            # self.done = True  # Считать попытку НЕ удачной и завершить
+            self.done = True  # Считать попытку НЕ удачной и завершить
             # print('3 - долго не может достичь нужной температуры')
 
         # Если достигнута целевая температура с погрешностью и удерживается в течение времени (попытка удачна)
@@ -188,7 +187,7 @@ class HeatingEnv(gym.Env):
         observation = np.array([
             np.interp(self.T_a_in, self.T_a_in_range, (-1, 1)),
             np.interp(self.U_reg, self.U_reg_range, (-1, 1)),
-            np.interp(discrepancy, self.discrepancy_range, (-1, 1)),
+            np.interp(self.T_a - self.target_temp, self.discrepancy_range, (-1, 1)),
             np.interp(self.T_a, self.T_a_range, (-1, 1)),
             np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
@@ -228,7 +227,7 @@ class HeatingEnv(gym.Env):
         observation = np.array([
             np.interp(self.T_a_in, self.T_a_in_range, (-1, 1)),
             np.interp(self.U_reg, self.U_reg_range, (-1, 1)),
-            np.interp(discrepancy, self.discrepancy_range, (-1, 1)),
+            np.interp(self.T_a - self.target_temp, self.discrepancy_range, (-1, 1)),
             np.interp(self.T_a, self.T_a_range, (-1, 1)),
             np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
