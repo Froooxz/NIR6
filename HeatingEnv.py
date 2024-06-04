@@ -95,11 +95,11 @@ class HeatingEnv(gym.Env):
 
         # Gnom noise
         amplitude = self.Gnom * 0.1
-        frequency = 1
-        x = np.linspace(0, self.time_maximum + self.time_limit + self.time_maximum, (self.time_maximum + self.time_limit + self.time_maximum) * 100)
+        frequency = 0.01
+
+        x = np.linspace(0, 60*10000, 60*10000*2)
         self.Gnom_noise = amplitude * np.sin(frequency * x)
-
-
+        self.T_a_in_noise = 1 * np.sin(frequency * x)
 
         self.T_a_in_range = (-20, 30)
         self.U_reg_range = (0, 220)
@@ -117,7 +117,7 @@ class HeatingEnv(gym.Env):
                                            shape=(1,),
                                            dtype=np.float32)  # Определение пространства действий агента
 
-        self.i = 0
+        self.iii = 0
 
     def step(self, action):
         rew = 0
@@ -133,15 +133,17 @@ class HeatingEnv(gym.Env):
         #     else:
         #         self.U_reg -= abs(action[0])  # Обновляем коэффициенты на основе действия агента
 
-        # self.hist.append(action[0])
+        # self.hist.append(self.iii)
 
         # Уравнения электродвигателя, считаем ток и обороты
         self.i += self.dt * (1 / self.L * (self.U - self.kw * self.w - self.i * self.R))
         self.w += self.dt * (1 / self.J * (self.ke * self.i - self.kc * self.w))
         # Считаем расход воздуха относительно оборотов
-        self.G_ = (self.Gnom+self.Gnom_noise[int(self.i)]) * (self.w / self.wnom)
+        self.G_ = (self.Gnom+self.Gnom_noise[self.iii]) * (self.w / self.wnom)
+        # self.G_ = self.Gnom * (self.w / self.wnom)
         # Уравнения теплопередачи
         self.T_n += self.dt * (1 / (self.N_c * self.N_m) * (self.U_reg ** 2 / self.N_R - self.alf * self.N_F * (self.T_n - self.T_a)))
+        # self.T_a += self.dt * (1 / (self.A_c * self.A_m) * (self.alf * self.N_F * (self.T_n - self.T_a) - 2 * self.G_ * self.A_ro * self.A_c * (self.T_a - (self.T_a_in + self.T_a_in_noise[self.iii]))))
         self.T_a += self.dt * (1 / (self.A_c * self.A_m) * (self.alf * self.N_F * (self.T_n - self.T_a) - 2 * self.G_ * self.A_ro * self.A_c * (self.T_a - self.T_a_in)))
 
         discrepancy = abs(self.T_a - self.target_temp)  # невязка
@@ -178,7 +180,7 @@ class HeatingEnv(gym.Env):
 
         # Небольшая штраф за недостижения желаемой температуре
         if discrepancy >= self.temp_error_threshold:
-            rew -= abs(self.T_a - self.target_temp) * 0.0005
+            rew -= abs(self.T_a - self.target_temp)**2 * 0.00005
 
         self.reward += rew
 
@@ -190,12 +192,17 @@ class HeatingEnv(gym.Env):
             np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
 
+        self.iii += 1
+        if self.iii >= 10000:
+            self.done = True
+
+
         return observation, self.reward, self.done, {}
 
-        self.i += 1
+
 
     def reset(self):
-        # print(self.hist)
+        print(self.hist)
         discrepancy = abs(self.T_a - self.target_temp)
 
         self.done = False
@@ -224,6 +231,6 @@ class HeatingEnv(gym.Env):
             np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
 
-        self.i = 0
+        self.iii = 0
 
         return observation

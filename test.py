@@ -14,6 +14,8 @@ U_reg = []
 rewards = []  # Список для хранения значений reward
 target = []
 G_ = []
+T_a_in = []
+
 env = HeatingEnv()
 env = DummyVecEnv([lambda: env])
 
@@ -34,13 +36,14 @@ while sbros < 1:
         target.append(env.envs[0].target_temp)
         U_reg.append(env.envs[0].U_reg)
         G_.append(env.envs[0].Gnom + env.envs[0].Gnom_noise[int(i)])
+        T_a_in.append(env.envs[0].T_a_in + env.envs[0].T_a_in_noise[int(i)])
 
         rewards.append(reward)
         i += 1
     done = False
     sbros += 1
 
-print(G_)
+
 # Преобразование U_reg к одномерному массиву
 U_reg_flat = [x[0] if isinstance(x, np.ndarray) else x for x in U_reg]
 U_reg_flat = np.array(U_reg_flat)

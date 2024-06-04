@@ -23,11 +23,11 @@ model = DDPG(
     # learning_starts=1000,  # обучение после выполнения X шагов
     # train_freq=1,  # обновляем политику каждые X шагов
     # gradient_steps=10,  # количество шагов градиентного спуска для обновления политики
-    policy_kwargs=dict(net_arch=[16, 16]),  # настройка архитектуры нейронной сети политики
+    policy_kwargs=dict(net_arch=[16]),  # настройка архитектуры нейронной сети политики
     verbose=1  # информацию о ходе обучения
 )
 
-model.learn(total_timesteps=3000)
+model.learn(total_timesteps=1000)
 
 
 # Сохранение модели
