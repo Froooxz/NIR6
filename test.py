@@ -21,7 +21,9 @@ env = DummyVecEnv([lambda: env])
 
 # Сброс среды
 obs = env.reset()
-i=0
+
+i = 0
+
 sbros = 0
 done = False
 # Запуск предсказаний на каждом временном шаге моделирования

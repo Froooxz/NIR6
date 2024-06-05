@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 # Исходные данные для моделирования
@@ -31,6 +32,7 @@ A_ro = 1.2  # Плотность воздуха, кг/м3
 A_m = A_ro * np.pi * (0.1) ** 2 / 4 * (2)  # Масса воздуха, кг (приблизительно, при условии
 # что воздуха прокачивается через 2м трубу сечением 0,1м
 
+
 alf = 250  # Коэффициент теплопередачи нихром - воздух, Вт/(м2*С)
 
 # Электрическая часть (двигатель вентилятора)
@@ -52,41 +54,78 @@ wnom = 1500 / 9.54929658551369  # Номинальная частота вращ
 
 # Параметры моделирования
 dt = 0.01  # Дискрет времени, с
-t_end = 100  # Общее время моделирования, с
+t_end = 30  # Общее время моделирования, с
 t = np.arange(0, t_end + dt, dt)  # Создание массива временных шагов от 0 до t_end с шагом dt
 
-# Начальтные условия моделирования, для численного интегрирования
-T_a_in = 30  # Температура окружающего воздуха, С
-T_a = np.zeros(len(t))
-T_a[0] = T_a_in
-T_n = np.zeros(len(t))
-T_n[0] = T_a_in
-i = np.zeros(len(t))
-i[0] = 0
-w = np.zeros(len(t))
-w[0] = 0
-G_ = np.zeros(len(t))
-G_[0] = 0
+df_rez = pd.DataFrame(columns=['discrepancy', 'T_a', 'U_reg', 'target', 'T_a_in', 'delta_U'])  # Создание таблицы
+hh = []
 
-U_reg = 220  # Напряжение подаваемое на нагреватель (ЕГО МЕНЯЕМ РЕГУЛЯТОРОМ)
 
-for j in range(int(t_end / dt)):
-    # Уравнения электродвигателя, считаем ток и обороты
-    i[j + 1] = i[j] + dt * (1 / L * (U - kw * w[j] - i[j] * R))
-    w[j + 1] = w[j] + dt * (1 / J * (ke * i[j] - kc * w[j]))
-    # Считаем расход воздуха относительно оборотов
-    G_[j + 1] = Gnom * (w[j + 1] / wnom)
-    # Уравнения теплопередачи
-    T_n[j + 1] = T_n[j] + dt * (1 / (N_c * N_m) * (U_reg ** 2 / N_R - alf * N_F * (T_n[j] - T_a[j])))
-    T_a[j + 1] = T_a[j] + dt * (1 / (A_c * A_m) * (alf * N_F * (T_n[j] - T_a[j]) - 2 * G_[j + 1] * A_ro * A_c * (T_a[j] - T_a_in)))
+for _ in range(100):
+    # Начальтные условия моделирования, для численного интегрирования
+    T_a_in = np.random.uniform(-20, 30)  # Температура окружающего воздуха, С
+    T_a = np.zeros(len(t))
+    T_a[0] = T_a_in
+    T_n = np.zeros(len(t))
+    T_n[0] = T_a_in
+    i = np.zeros(len(t))
+    i[0] = 0
+    w = np.zeros(len(t))
+    w[0] = 0
+    G_ = np.zeros(len(t))
+    G_[0] = 0
 
-plt.figure(1)
-plt.plot(t, T_n, t, T_a)
-plt.grid(True)
-plt.legend(['T_n', 'T_a'])
-plt.figure(2)
-plt.plot(t, w)
-plt.grid(True)
-plt.show()
+    target = T_a_in + np.random.uniform(1, 11)
 
-print(abs(abs(T_a_in)-abs(T_a[-1])))
+    discrepancy = np.zeros(len(t))
+    discrepancy[0] = T_a[0] - target
+
+    U_reg = np.zeros(len(t))
+    U_reg[0] = np.random.uniform(0, 220)  # Напряжение подаваемое на нагреватель (ЕГО МЕНЯЕМ РЕГУЛЯТОРОМ)
+
+    delta_U = np.zeros(len(t))
+    delta_U[0] = 0
+
+    for j in range(int(t_end / dt)):
+        # Уравнения электродвигателя, считаем ток и обороты
+        i[j + 1] = i[j] + dt * (1 / L * (U - kw * w[j] - i[j] * R))
+        w[j + 1] = w[j] + dt * (1 / J * (ke * i[j] - kc * w[j]))
+        # Считаем расход воздуха относительно оборотов
+        G_[j + 1] = Gnom * (w[j + 1] / wnom)
+        # Уравнения теплопередачи
+        T_n[j + 1] = T_n[j] + dt * (1 / (N_c * N_m) * (U_reg[j] ** 2 / N_R - alf * N_F * (T_n[j] - T_a[j])))
+        T_a[j + 1] = T_a[j] + dt * (1 / (A_c * A_m) * (alf * N_F * (T_n[j] - T_a[j]) - 2 * G_[j + 1] * A_ro * A_c * (T_a[j] - T_a_in)))
+        discrepancy[j + 1] = T_a[j + 1] - target
+
+        if discrepancy[j + 1] < 0:
+            delta_U[j + 1] = np.random.uniform(0, 1)
+            U_reg[j + 1] = U_reg[j] + delta_U[j + 1]
+        elif discrepancy[j + 1] > 0:
+            delta_U[j + 1] = np.random.uniform(-1, 0)
+            U_reg[j + 1] = U_reg[j] + delta_U[j + 1]
+        else:
+            pass
+
+    current_df = pd.DataFrame({
+        'discrepancy': discrepancy,
+        'T_a': T_a,
+        'U_reg': U_reg,
+        'target': [target] * len(T_a),
+        'T_a_in': [T_a_in] * len(T_a),
+        'delta_U': delta_U
+    })
+    df_rez = pd.concat([df_rez, current_df], ignore_index=True)  # Прсоединение данных к таблице
+
+    # plt.figure(1)
+    # plt.plot(t, T_a, t, [target] * len(t))
+    # plt.grid(True)
+    # plt.legend(['T_a', 'target'])
+    #
+    # plt.show()
+
+
+
+df_rez.to_csv(f'C:/Users/FRXZ/Downloads/rez.csv', index=False)  # Сохранение таблицы в файл
+
+
+

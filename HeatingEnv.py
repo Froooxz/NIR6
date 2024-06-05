@@ -109,11 +109,11 @@ class HeatingEnv(gym.Env):
 
         self.action_range = (0, 220)
 
-        self.observation_space = gym.spaces.Box(low=np.array([-1, -1, -1, -1, -1]),
-                                                high=np.array([1, 1, 1, 1, 1]),
+        self.observation_space = gym.spaces.Box(low=np.array([0, 9, 19]),
+                                                high=np.array([220, 22, 21]),
                                                 dtype=np.float32)  # Определение пространства состояний среды: температура и частота вращения
 
-        self.action_space = gym.spaces.Box(low=-1, high=1,
+        self.action_space = gym.spaces.Box(low=0, high=220,
                                            shape=(1,),
                                            dtype=np.float32)  # Определение пространства действий агента
 
@@ -122,7 +122,7 @@ class HeatingEnv(gym.Env):
     def step(self, action):
         rew = 0
 
-        self.U_reg = np.interp(action[0], (-1, 1), self.action_range)  # Обновляем коэффициенты на основе действия агента
+        self.U_reg = action[0]  # Обновляем коэффициенты на основе действия агента
 
         # # Расчёт U_reg
         # if 0 > self.U_reg + action[0] or self.U_reg + action[0] > 220:
@@ -180,16 +180,14 @@ class HeatingEnv(gym.Env):
 
         # Небольшая штраф за недостижения желаемой температуре
         if discrepancy >= self.temp_error_threshold:
-            rew -= abs(self.T_a - self.target_temp) * 0.00005
+            rew -= abs(self.T_a - self.target_temp) * 0.0005
 
         self.reward += rew
 
         observation = np.array([
-            np.interp(self.T_a_in, self.T_a_in_range, (-1, 1)),
-            np.interp(self.U_reg, self.U_reg_range, (-1, 1)),
-            np.interp(self.T_a - self.target_temp, self.discrepancy_range, (-1, 1)),
-            np.interp(self.T_a, self.T_a_range, (-1, 1)),
-            np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
+            self.U_reg,
+            self.T_a,
+            self.target_temp],
             dtype="object")
 
         self.iii += 1
@@ -225,11 +223,9 @@ class HeatingEnv(gym.Env):
         self.U_reg = 0
 
         observation = np.array([
-            np.interp(self.T_a_in, self.T_a_in_range, (-1, 1)),
-            np.interp(self.U_reg, self.U_reg_range, (-1, 1)),
-            np.interp(self.T_a - self.target_temp, self.discrepancy_range, (-1, 1)),
-            np.interp(self.T_a, self.T_a_range, (-1, 1)),
-            np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
+            self.U_reg,
+            self.T_a,
+            self.target_temp],
             dtype="object")
 
         self.iii = 0
