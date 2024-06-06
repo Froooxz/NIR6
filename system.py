@@ -125,7 +125,7 @@ for _ in range(100):
 
 
 
-df_rez.to_csv(f'C:/Users/FRXZ/Downloads/rez.csv', index=False)  # Сохранение таблицы в файл
+df_rez.to_csv(f'rez.csv', index=False)  # Сохранение таблицы в файл
 
 
 

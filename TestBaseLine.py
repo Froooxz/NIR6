@@ -93,7 +93,7 @@ delta_U[0] = 0
 # Загрузка скалера
 scaler = joblib.load('scaler.joblib')
 # Загрузка модели
-model = load_model('model.h5')
+model = load_model('modelBase.h5')
 
 
 for j in range(int(t_end / dt)):

@@ -9,7 +9,7 @@ import joblib
 
 
 # Загрузка данных из CSV-файла
-df = pd.read_csv('C:/Users/FRXZ/Downloads/rez.csv')
+df = pd.read_csv('rez.csv')
 
 # Определение входных и выходных данных
 X = df[['discrepancy', 'T_a', 'U_reg', 'target', 'T_a_in']]  # Входные параметры
@@ -25,9 +25,8 @@ X_test = scaler.transform(X_test)
 
 # Создание модели нейронной сети
 model = Sequential()
-model.add(Dense(4, input_dim=X_train.shape[1], activation='relu'))
-model.add(Dense(4, activation='relu'))
-model.add(Dense(1))
+model.add(Dense(1, input_dim=X_train.shape[1]))
+
 
 # Компиляция модели
 model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
@@ -45,5 +44,5 @@ y_pred = model.predict(X_test)
 # Сохранение скалера
 joblib.dump(scaler, 'scaler.joblib')
 # Сохранение модели
-model.save('model.h5')
+model.save('modelBase.h5')
 
