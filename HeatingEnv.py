@@ -91,7 +91,7 @@ class HeatingEnv(gym.Env):
         self.time_limit = 30  # лимит времени (время в течение которого нужно держать температуру в целевом диапазоне)
         self.time_maximum = 80  # время моделеирования (не более заданного в условии)
 
-        self.max_temp = self.target_temp + 1000  # Максимально допустимая температура
+
 
         # Gnom noise
         amplitude = self.Gnom * 0.1
@@ -113,7 +113,7 @@ class HeatingEnv(gym.Env):
                                                 high=np.array([220, 22, 21]),
                                                 dtype=np.float32)  # Определение пространства состояний среды: температура и частота вращения
 
-        self.action_space = gym.spaces.Box(low=0, high=220,
+        self.action_space = gym.spaces.Box(low=-1, high=1,
                                            shape=(1,),
                                            dtype=np.float32)  # Определение пространства действий агента
 
@@ -122,16 +122,13 @@ class HeatingEnv(gym.Env):
     def step(self, action):
         rew = 0
 
-        self.U_reg = action[0]  # Обновляем коэффициенты на основе действия агента
+        # self.U_reg = action[0]  # Обновляем коэффициенты на основе действия агента
 
-        # # Расчёт U_reg
-        # if 0 > self.U_reg + action[0] or self.U_reg + action[0] > 220:
-        #     pass
-        # else:
-        #     if self.T_a < self.target_temp:
-        #         self.U_reg += abs(action[0])  # Обновляем коэффициенты на основе действия агента
-        #     else:
-        #         self.U_reg -= abs(action[0])  # Обновляем коэффициенты на основе действия агента
+        # Расчёт U_reg
+        if 0 > self.U_reg + action[0] or self.U_reg + action[0] > 220:
+            pass
+        else:
+            self.U_reg += abs(action[0])  # Обновляем коэффициенты на основе действия агента
 
         # self.hist.append(self.iii)
 
@@ -139,8 +136,8 @@ class HeatingEnv(gym.Env):
         self.i += self.dt * (1 / self.L * (self.U - self.kw * self.w - self.i * self.R))
         self.w += self.dt * (1 / self.J * (self.ke * self.i - self.kc * self.w))
         # Считаем расход воздуха относительно оборотов
-        self.G_ = self.Gnom * (self.w / self.wnom) + self.Gnom_noise[self.iii]
-        # self.G_ = self.Gnom * (self.w / self.wnom)
+        # self.G_ = self.Gnom * (self.w / self.wnom) + self.Gnom_noise[self.iii]
+        self.G_ = self.Gnom * (self.w / self.wnom)
         # Уравнения теплопередачи
         self.T_n += self.dt * (1 / (self.N_c * self.N_m) * (self.U_reg ** 2 / self.N_R - self.alf * self.N_F * (self.T_n - self.T_a)))
         # self.T_a += self.dt * (1 / (self.A_c * self.A_m) * (self.alf * self.N_F * (self.T_n - self.T_a) - 2 * self.G_ * self.A_ro * self.A_c * (self.T_a - (self.T_a_in + self.T_a_in_noise[self.iii]))))
@@ -152,12 +149,6 @@ class HeatingEnv(gym.Env):
         self.time_maximum_count += 0.01
 
         ### REWARD
-
-        # Проверяем на допустимость температуры (выход за max границу) (попытка не удачна)
-        if self.T_a >= self.max_temp:
-            rew -= 5  # Штраф за выход за пределы
-            # self.done = True  # Считать попытку НЕ удачной и завершить
-            # print('1 - выход за max границу')
 
         # Если долго не может достичь нужной температуры (попытка не удачна)
         if self.time_maximum_count >= self.time_maximum:
@@ -211,12 +202,11 @@ class HeatingEnv(gym.Env):
         self.G_ = 0
         self.i = 0
         self.w = 0
-        # self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
         self.T_a_in = int(np.random.uniform(10, 19))  # начальная температура воздуха
         self.target_temp = 20  # целевая температура  # целевая температура
+        # self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
         # self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 11))  # целевая температура  # целевая температура
 
-        self.max_temp = self.target_temp + 100  # обновляем верхний предел
         self.T_n = self.T_a_in  # текущая спирали
         self.T_a = self.T_a_in  # текущая температура воздуха
 

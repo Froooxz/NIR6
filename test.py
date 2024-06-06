@@ -37,7 +37,7 @@ while sbros < 1:
         T_a.append(env.envs[0].T_a)
         target.append(env.envs[0].target_temp)
         U_reg.append(env.envs[0].U_reg)
-        G_.append(env.envs[0].Gnom + env.envs[0].Gnom_noise[int(i)])
+        G_.append(env.envs[0].G_)
         T_a_in.append(env.envs[0].T_a_in + env.envs[0].T_a_in_noise[int(i)])
 
         rewards.append(reward)
@@ -53,7 +53,7 @@ U_reg_flat = np.array(U_reg_flat)
 # Построение графика
 plt.figure(figsize=(10, 9))
 
-plt.subplot(4, 1, 1)
+plt.subplot(3, 1, 1)
 
 l = len(T_a[:-10])
 plt.plot(T_a[:-10], label='T_a')
@@ -64,20 +64,20 @@ plt.ylabel('T')
 plt.legend()
 plt.grid()
 
-plt.subplot(4, 1, 2)
+plt.subplot(3, 1, 2)
 plt.plot(U_reg_flat[:-10])
 plt.ylabel('U_reg')
 plt.grid()
 
-plt.subplot(4, 1, 3)
+plt.subplot(3, 1, 3)
 plt.plot(rewards[:-10])
 plt.ylabel('Reward')
 plt.grid()
 
-plt.subplot(4, 1, 4)
-plt.plot(G_[:-10])
-plt.ylabel('Gnom + noise')
-plt.grid()
+# plt.subplot(4, 1, 4)
+# plt.plot(G_[:-10])
+# plt.ylabel('Gnom + noise')
+# plt.grid()
 
 
 plt.show()

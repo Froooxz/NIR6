@@ -25,14 +25,16 @@ X_test = scaler.transform(X_test)
 
 # Создание модели нейронной сети
 model = Sequential()
-model.add(Dense(1, input_dim=X_train.shape[1]))
+model.add(Dense(8, input_dim=X_train.shape[1], activation='relu'))
+model.add(Dense(8, activation='relu'))
+model.add(Dense(1, activation='linear'))
 
 
 # Компиляция модели
 model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
 
 # Обучение модели
-model.fit(X_train, y_train, epochs=3, batch_size=32, validation_split=0.1)
+model.fit(X_train, y_train, epochs=5, batch_size=32, validation_split=0.1)
 
 # Оценка модели на тестовых данных
 loss = model.evaluate(X_test, y_test)
