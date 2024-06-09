@@ -107,7 +107,6 @@ for _ in range(100):
             pass
 
     current_df = pd.DataFrame({
-        'discrepancy': discrepancy,
         'T_a': T_a,
         'U_reg': U_reg,
         'target': [target] * len(T_a),

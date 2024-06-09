@@ -84,7 +84,7 @@ class HeatingEnv(gym.Env):
 
         self.target_temp = 20  # целевая температура
         # self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 11))  # целевая температура
-
+        self.e = self.T_a - self.target_temp
         self.temp_error_threshold = 0.2  # Задание порогового значения погрешности температуры
         self.time_in_target_range = 0  # счетчик времени, проведенного в целевом диапазоне
         self.time_maximum_count = 0  # время моделеирования счётчик
@@ -101,16 +101,16 @@ class HeatingEnv(gym.Env):
         self.Gnom_noise = amplitude * np.sin(frequency * x)
         self.T_a_in_noise = 1 * np.sin(frequency * x)
 
-        self.T_a_in_range = (-20, 30)
+        self.e_range = (-12, 12)
         self.U_reg_range = (0, 220)
-        self.discrepancy_range = (-50, 50)
+        self.T_a_in_range = (-20, 30)
         self.T_a_range = (-20, 50)
         self.target_temp_range = (-20, 50)
 
-        self.action_range = (0, 220)
 
-        self.observation_space = gym.spaces.Box(low=np.array([0, 9, 19]),
-                                                high=np.array([220, 22, 21]),
+
+        self.observation_space = gym.spaces.Box(low=np.array([-1, -1, -1, -1, -1]),
+                                                high=np.array([1, 1, 1, 1, 1]),
                                                 dtype=np.float32)  # Определение пространства состояний среды: температура и частота вращения
 
         self.action_space = gym.spaces.Box(low=-1, high=1,
@@ -126,6 +126,7 @@ class HeatingEnv(gym.Env):
 
         # Расчёт U_reg
         if 0 > self.U_reg + action[0] or self.U_reg + action[0] > 220:
+            rew -= 0.001
             pass
         else:
             self.U_reg += abs(action[0])  # Обновляем коэффициенты на основе действия агента
@@ -143,6 +144,7 @@ class HeatingEnv(gym.Env):
         # self.T_a += self.dt * (1 / (self.A_c * self.A_m) * (self.alf * self.N_F * (self.T_n - self.T_a) - 2 * self.G_ * self.A_ro * self.A_c * (self.T_a - (self.T_a_in + self.T_a_in_noise[self.iii]))))
         self.T_a += self.dt * (1 / (self.A_c * self.A_m) * (self.alf * self.N_F * (self.T_n - self.T_a) - 2 * self.G_ * self.A_ro * self.A_c * (self.T_a - self.T_a_in)))
 
+        self.e = self.T_a - self.target_temp
         discrepancy = abs(self.T_a - self.target_temp)  # невязка
         # print(discrepancy)
 
@@ -150,13 +152,17 @@ class HeatingEnv(gym.Env):
 
         ### REWARD
 
+        rew -= np.exp(discrepancy) * 0.000001
+
         # Если долго не может достичь нужной температуры (попытка не удачна)
         if self.time_maximum_count >= self.time_maximum:
+            rew -= 10
             self.done = True  # Считать попытку НЕ удачной и завершить
             # print('3 - долго не может достичь нужной температуры')
 
         # Если достигнута целевая температура с погрешностью и удерживается в течение времени (попытка удачна)
         if self.time_in_target_range >= self.time_limit:
+            rew += 10
             self.done = True  # Считать попытку удачной и завершить
             # print('4 - температура удерживается в течение времени')
 
@@ -169,16 +175,18 @@ class HeatingEnv(gym.Env):
         else:
             self.time_in_target_range = 0  # Сбрасываем счётчик, если целевая температура не достигнута
 
-        # Небольшая штраф за недостижения желаемой температуре
-        if discrepancy >= self.temp_error_threshold:
-            rew -= abs(self.T_a - self.target_temp) * 0.0005
+
 
         self.reward += rew
 
+
+
         observation = np.array([
-            self.U_reg,
-            self.T_a,
-            self.target_temp],
+            np.interp(self.e, self.e_range, (-1, 1)),
+            np.interp(self.U_reg, self.U_reg_range, (-1, 1)),
+            np.interp(self.T_a_in, self.T_a_in_range, (-1, 1)),
+            np.interp(self.T_a, self.T_a_range, (-1, 1)),
+            np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
 
         self.iii += 1
@@ -191,7 +199,7 @@ class HeatingEnv(gym.Env):
 
 
     def reset(self):
-        print(self.hist)
+        # print(self.hist)
         discrepancy = abs(self.T_a - self.target_temp)
 
         self.done = False
@@ -206,6 +214,7 @@ class HeatingEnv(gym.Env):
         self.target_temp = 20  # целевая температура  # целевая температура
         # self.T_a_in = int(np.random.uniform(-20, 30))  # начальная температура воздуха
         # self.target_temp = int(np.random.uniform(self.T_a_in, self.T_a_in + 11))  # целевая температура  # целевая температура
+        self.e = self.T_a - self.target_temp
 
         self.T_n = self.T_a_in  # текущая спирали
         self.T_a = self.T_a_in  # текущая температура воздуха
@@ -213,10 +222,13 @@ class HeatingEnv(gym.Env):
         self.U_reg = 0
 
         observation = np.array([
-            self.U_reg,
-            self.T_a,
-            self.target_temp],
+            np.interp(self.e, self.e_range, (-1, 1)),
+            np.interp(self.U_reg, self.U_reg_range, (-1, 1)),
+            np.interp(self.T_a_in, self.T_a_in_range, (-1, 1)),
+            np.interp(self.T_a, self.T_a_range, (-1, 1)),
+            np.interp(self.target_temp, self.target_temp_range, (-1, 1))],
             dtype="object")
+
 
         self.iii = 0
 
